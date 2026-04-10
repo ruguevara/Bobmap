@@ -1,0 +1,30 @@
+[
+  {
+    "star_hip": null,
+    "book_name": "Sol",
+    "first_visit_year": 2133,
+    "bob_ids": ["Bob-1"],
+    "notes": "Origin system. Bob-1 launched from here."
+  },
+  {
+    "star_hip": 71683,
+    "book_name": "Alpha Centauri",
+    "first_visit_year": 2137,
+    "bob_ids": ["Bob-1"],
+    "notes": "First system visited by Bob-1. Already colonised by FAITH mission."
+  },
+  {
+    "star_hip": 16537,
+    "book_name": "Epsilon Eridani",
+    "first_visit_year": null,
+    "bob_ids": [],
+    "notes": "TODO: verify book canon"
+  },
+  {
+    "star_hip": 8102,
+    "book_name": "Tau Ceti",
+    "first_visit_year": null,
+    "bob_ids": [],
+    "notes": "Mentioned in books. TODO: add details"
+  }
+]

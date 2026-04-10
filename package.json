@@ -1,0 +1,20 @@
+{
+  "name": "bobiverse-star-map",
+  "version": "0.1.0",
+  "description": "Interactive 3D star map of the Bobiverse universe — fan project",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "data": "python3 scripts/process_hyg.py"
+  },
+  "dependencies": {
+    "three": "^0.175.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.175.0",
+    "typescript": "^5.4.0",
+    "vite": "^5.2.0"
+  }
+}

@@ -1,0 +1,162 @@
+import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import type { Star } from '../types/star'
+
+/** Harvard spectral class → approximate colour */
+const SPECTRAL_COLOR: Record<string, number> = {
+  O: 0x9bb0ff, // blue
+  B: 0xaabfff, // blue-white
+  A: 0xcad7ff, // white-blue
+  F: 0xf8f7ff, // white
+  G: 0xfff4ea, // yellow-white (Sol)
+  K: 0xffd2a1, // orange
+  M: 0xff9966, // red-orange
+  default: 0xffffff,
+}
+
+/**
+ * Three.js scene: interactive 3D star map.
+ *
+ * Coordinate convention (from HYG):
+ *   x → vernal equinox (RA 0h, Dec 0°)
+ *   y → RA 6h, Dec 0°
+ *   z → north celestial pole
+ *
+ * We map HYG z → Three.js Y ("up") so the galactic plane
+ * is roughly horizontal in the default view.
+ * Units: 1 Three.js unit = 1 parsec.
+ */
+export class StarMap {
+  private scene: THREE.Scene
+  private camera: THREE.PerspectiveCamera
+  private renderer: THREE.WebGLRenderer
+  private controls: OrbitControls
+  private animId: number | null = null
+
+  // TODO Phase 2: separate group for Bobiverse overlays
+  // private overlayGroup = new THREE.Group()
+
+  constructor(private container: HTMLElement) {
+    this.scene = new THREE.Scene()
+    this.scene.background = new THREE.Color(0x000008)
+
+    this.camera = new THREE.PerspectiveCamera(
+      60,
+      container.clientWidth / container.clientHeight,
+      0.01,
+      2000,
+    )
+    this.camera.position.set(0, 15, 35)
+    this.camera.lookAt(0, 0, 0)
+
+    this.renderer = new THREE.WebGLRenderer({ antialias: true })
+    this.renderer.setSize(container.clientWidth, container.clientHeight)
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    container.appendChild(this.renderer.domElement)
+
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement)
+    this.controls.enableDamping = true
+    this.controls.dampingFactor = 0.06
+    this.controls.minDistance = 0.5
+    this.controls.maxDistance = 400
+
+    this.addGrid()
+    this.addSol()
+
+    window.addEventListener('resize', this.onResize)
+    this.animate()
+  }
+
+  // ─── Public API ───────────────────────────────────────────────────────────
+
+  loadStars(stars: Star[]): void {
+    const positions: number[] = []
+    const colors: number[] = []
+    const col = new THREE.Color()
+
+    for (const s of stars) {
+      if (s.dist_ly === 0) continue // Sol rendered separately
+      positions.push(s.x, s.z, s.y) // HYG z → Three.js Y
+      col.set(SPECTRAL_COLOR[s.spect] ?? SPECTRAL_COLOR.default)
+      colors.push(col.r, col.g, col.b)
+    }
+
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+
+    const mat = new THREE.PointsMaterial({
+      size: 0.25,
+      vertexColors: true,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: 0.9,
+    })
+
+    this.scene.add(new THREE.Points(geo, mat))
+
+    // TODO Phase 2: raycaster for hover/click labels
+    // TODO Phase 3: rebuild Points when filters change
+  }
+
+  dispose(): void {
+    if (this.animId !== null) cancelAnimationFrame(this.animId)
+    window.removeEventListener('resize', this.onResize)
+    this.renderer.dispose()
+    this.container.removeChild(this.renderer.domElement)
+  }
+
+  // ─── Private ─────────────────────────────────────────────────────────────
+
+  /** Sol: bright yellow sphere at origin */
+  private addSol(): void {
+    const geo = new THREE.SphereGeometry(0.25, 16, 16)
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffee44 })
+    this.scene.add(new THREE.Mesh(geo, mat))
+
+    // Soft glow ring
+    const ringGeo = new THREE.RingGeometry(0.35, 0.55, 32)
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xffee44,
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.DoubleSide,
+    })
+    this.scene.add(new THREE.Mesh(ringGeo, ringMat))
+  }
+
+  /** Faint reference grid on the galactic plane */
+  private addGrid(): void {
+    const grid = new THREE.GridHelper(62, 31, 0x0a0a1a, 0x0a0a1a)
+    this.scene.add(grid)
+
+    // 10 ly and 25 ly reference circles (approximate: 1 pc ≈ 3.26 ly)
+    for (const radiusLy of [10, 25, 50, 100]) {
+      const radiusPc = radiusLy / 3.26156
+      const circle = new THREE.LineLoop(
+        new THREE.BufferGeometry().setFromPoints(
+          Array.from({ length: 64 }, (_, i) => {
+            const a = (i / 64) * Math.PI * 2
+            return new THREE.Vector3(Math.cos(a) * radiusPc, 0, Math.sin(a) * radiusPc)
+          }),
+        ),
+        new THREE.LineBasicMaterial({ color: 0x111122, transparent: true, opacity: 0.6 }),
+      )
+      this.scene.add(circle)
+    }
+  }
+
+  private animate = (): void => {
+    this.animId = requestAnimationFrame(this.animate)
+    this.controls.update()
+    this.renderer.render(this.scene, this.camera)
+  }
+
+  private onResize = (): void => {
+    const w = this.container.clientWidth
+    const h = this.container.clientHeight
+    this.camera.aspect = w / h
+    this.camera.updateProjectionMatrix()
+    this.renderer.setSize(w, h)
+  }
+}
