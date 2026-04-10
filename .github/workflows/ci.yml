@@ -61,30 +61,34 @@ jobs:
         run: python3 -m py_compile scripts/process_hyg.py && echo "✓ process_hyg.py"
 
   # ── Deploy to GitHub Pages (main branch only) ───────────────────────────────
-  # TODO Phase 6: uncomment when ready to deploy
-  #
-  # deploy:
-  #   name: Deploy to GitHub Pages
-  #   needs: [build, validate-data]
-  #   runs-on: ubuntu-latest
-  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-  #   permissions:
-  #     contents: read
-  #     pages: write
-  #     id-token: write
-  #   environment:
-  #     name: github-pages
-  #     url: ${{ steps.deploy.outputs.page_url }}
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
-  #         cache: npm
-  #     - run: npm ci && npm run build
-  #     - uses: actions/configure-pages@v4
-  #     - uses: actions/upload-pages-artifact@v3
-  #       with:
-  #         path: dist/
-  #     - id: deploy
-  #       uses: actions/deploy-pages@v4
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: [build, validate-data]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Build
+        run: npm ci && npm run build
+
+      - uses: actions/configure-pages@v4
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
