@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import type { Star } from '../types/star'
 
 /** Harvard spectral class → approximate colour */
@@ -30,6 +31,7 @@ export class StarMap {
   private scene: THREE.Scene
   private camera: THREE.PerspectiveCamera
   private renderer: THREE.WebGLRenderer
+  private labelRenderer: CSS2DRenderer
   private controls: OrbitControls
   private animId: number | null = null
 
@@ -46,13 +48,20 @@ export class StarMap {
       0.01,
       2000,
     )
-    this.camera.position.set(0, 15, 35)
+    this.camera.position.set(0, 6, 14)
     this.camera.lookAt(0, 0, 0)
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true })
     this.renderer.setSize(container.clientWidth, container.clientHeight)
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     container.appendChild(this.renderer.domElement)
+
+    this.labelRenderer = new CSS2DRenderer()
+    this.labelRenderer.setSize(container.clientWidth, container.clientHeight)
+    this.labelRenderer.domElement.style.position = 'absolute'
+    this.labelRenderer.domElement.style.top = '0'
+    this.labelRenderer.domElement.style.pointerEvents = 'none'
+    container.appendChild(this.labelRenderer.domElement)
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement)
     this.controls.enableDamping = true
@@ -111,6 +120,36 @@ export class StarMap {
       opacity: 0.7,
     })))
 
+    // Star name labels for all named stars
+    const addLabel = (text: string, x: number, y: number, z: number, color = 'rgba(180,210,255,0.85)') => {
+      const div = document.createElement('div')
+      div.textContent = text
+      div.style.cssText = [
+        `color: ${color}`,
+        'font-size: 10px',
+        'font-family: monospace',
+        'pointer-events: none',
+        'padding: 0 2px',
+        'text-shadow: 0 0 5px #000, 0 0 5px #000',
+        'white-space: nowrap',
+      ].join(';')
+      const obj = new CSS2DObject(div)
+      obj.position.set(x, y, z)
+      this.scene.add(obj)
+    }
+
+    // Sol label
+    addLabel('Sol', 0, 0.35, 0, 'rgba(255,238,120,0.9)')
+
+    for (const s of stars) {
+      if (s.dist_ly === 0) continue
+      const label = s.name ?? s.bf
+      if (!label) continue
+      // HYG→Three.js coord swap; offset label above star in Y
+      const offset = 0.25 + s.dist_ly * 0.002
+      addLabel(label, s.x, s.z + offset, s.y)
+    }
+
     // TODO Phase 2: raycaster for hover/click labels
     // TODO Phase 3: rebuild Points when filters change
   }
@@ -120,6 +159,7 @@ export class StarMap {
     window.removeEventListener('resize', this.onResize)
     this.renderer.dispose()
     this.container.removeChild(this.renderer.domElement)
+    this.container.removeChild(this.labelRenderer.domElement)
   }
 
   // ─── Private ─────────────────────────────────────────────────────────────
@@ -184,6 +224,7 @@ export class StarMap {
     this.animId = requestAnimationFrame(this.animate)
     this.controls.update()
     this.renderer.render(this.scene, this.camera)
+    this.labelRenderer.render(this.scene, this.camera)
   }
 
   private onResize = (): void => {
@@ -192,5 +233,6 @@ export class StarMap {
     this.camera.aspect = w / h
     this.camera.updateProjectionMatrix()
     this.renderer.setSize(w, h)
+    this.labelRenderer.setSize(w, h)
   }
 }
