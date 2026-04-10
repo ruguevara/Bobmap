@@ -1,5 +1,7 @@
 node_modules/
 dist/
+.debug/
+.superpowers/
 .DS_Store
 *.local
 *.log
