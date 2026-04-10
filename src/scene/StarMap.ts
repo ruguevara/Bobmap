@@ -76,7 +76,8 @@ export class StarMap {
 
     for (const s of stars) {
       if (s.dist_ly === 0) continue // Sol rendered separately
-      positions.push(s.x, s.z, s.y) // HYG z → Three.js Y
+      const x = s.x, y = s.z, z = s.y // HYG z → Three.js Y
+      positions.push(x, y, z)
       col.set(SPECTRAL_COLOR[s.spect] ?? SPECTRAL_COLOR.default)
       colors.push(col.r, col.g, col.b)
     }
@@ -84,16 +85,31 @@ export class StarMap {
     const geo = new THREE.BufferGeometry()
     geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-
-    const mat = new THREE.PointsMaterial({
-      size: 0.25,
+    this.scene.add(new THREE.Points(geo, new THREE.PointsMaterial({
+      size: 0.4,
       vertexColors: true,
       sizeAttenuation: true,
       transparent: true,
-      opacity: 0.9,
-    })
+      opacity: 1.0,
+      map: StarMap.makeStarTexture(),
+      alphaTest: 0.01,
+    })))
 
-    this.scene.add(new THREE.Points(geo, mat))
+    // Faint vertical lines projecting each star down to the reference plane
+    const linePositions: number[] = []
+    for (let i = 0; i < positions.length; i += 3) {
+      const x = positions[i], y = positions[i + 1], z = positions[i + 2]
+      if (Math.abs(y) < 0.01) continue // skip stars on the plane
+      linePositions.push(x, y, z)  // star position
+      linePositions.push(x, 0, z)  // foot on plane
+    }
+    const projGeo = new THREE.BufferGeometry()
+    projGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3))
+    this.scene.add(new THREE.LineSegments(projGeo, new THREE.LineBasicMaterial({
+      color: 0x4466aa,
+      transparent: true,
+      opacity: 0.7,
+    })))
 
     // TODO Phase 2: raycaster for hover/click labels
     // TODO Phase 3: rebuild Points when filters change
@@ -108,14 +124,14 @@ export class StarMap {
 
   // ─── Private ─────────────────────────────────────────────────────────────
 
-  /** Sol: bright yellow sphere at origin */
+  /** Sol: bright yellow disk at origin */
   private addSol(): void {
-    const geo = new THREE.SphereGeometry(0.25, 16, 16)
+    const geo = new THREE.SphereGeometry(0.12, 16, 16)
     const mat = new THREE.MeshBasicMaterial({ color: 0xffee44 })
     this.scene.add(new THREE.Mesh(geo, mat))
 
     // Soft glow ring
-    const ringGeo = new THREE.RingGeometry(0.35, 0.55, 32)
+    const ringGeo = new THREE.RingGeometry(0.18, 0.28, 32)
     const ringMat = new THREE.MeshBasicMaterial({
       color: 0xffee44,
       transparent: true,
@@ -125,9 +141,9 @@ export class StarMap {
     this.scene.add(new THREE.Mesh(ringGeo, ringMat))
   }
 
-  /** Faint reference grid on the galactic plane */
+  /** Faint reference grid on the celestial equatorial plane (HYG z=0) */
   private addGrid(): void {
-    const grid = new THREE.GridHelper(62, 31, 0x0a0a1a, 0x0a0a1a)
+    const grid = new THREE.GridHelper(120, 30, 0x2a2a5a, 0x1a1a3a)
     this.scene.add(grid)
 
     // 10 ly and 25 ly reference circles (approximate: 1 pc ≈ 3.26 ly)
@@ -140,10 +156,28 @@ export class StarMap {
             return new THREE.Vector3(Math.cos(a) * radiusPc, 0, Math.sin(a) * radiusPc)
           }),
         ),
-        new THREE.LineBasicMaterial({ color: 0x111122, transparent: true, opacity: 0.6 }),
+        new THREE.LineBasicMaterial({ color: 0x2233aa, transparent: true, opacity: 0.7 }),
       )
       this.scene.add(circle)
     }
+  }
+
+  /** Generate a soft circular disk texture for star points */
+  private static makeStarTexture(): THREE.CanvasTexture {
+    const size = 64
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')!
+    const r = size / 2
+    const grad = ctx.createRadialGradient(r, r, 0, r, r, r)
+    grad.addColorStop(0, 'rgba(255,255,255,1)')
+    grad.addColorStop(0.4, 'rgba(255,255,255,0.9)')
+    grad.addColorStop(0.7, 'rgba(255,255,255,0.3)')
+    grad.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, size, size)
+    return new THREE.CanvasTexture(canvas)
   }
 
   private animate = (): void => {
