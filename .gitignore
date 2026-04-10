@@ -3,6 +3,8 @@ dist/
 .DS_Store
 *.local
 *.log
+__pycache__/
+*.pyc
 
 # HYG source CSV (большой файл, не коммитим)
 hygdata_v3.csv
