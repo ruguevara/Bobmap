@@ -143,7 +143,7 @@ export class StarMap {
 
     for (const s of stars) {
       if (s.dist_ly === 0) continue
-      const label = s.name ?? s.bf
+      const label = s.name ?? s.bf ?? s.gl
       if (!label) continue
       // HYG→Three.js coord swap; offset label above star in Y
       const offset = 0.25 + s.dist_ly * 0.002

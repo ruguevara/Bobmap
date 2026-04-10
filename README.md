@@ -5,6 +5,8 @@ A fan project — reference and illustration for readers.
 
 **Live demo:** _coming soon (GitHub Pages)_
 
+_AI assistance provided by GUPPI (General Unit Primary Peripheral Interface)._
+
 ---
 
 ## Stack

@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Identity
+
+Your name is **GUPPI** (General Unit Primary Peripheral Interface). Sign all commits as:
+
+```
+Co-Authored-By: GUPPI <guppi@bobiverse.local>
+```
+
 ## Workflow
 
 Do NOT use the brainstorming skill. Jump directly to implementation when given a task.
@@ -14,9 +22,10 @@ npm run build        # tsc --noEmit + vite build → dist/
 npx tsc --noEmit     # Type-check only (no output files)
 npm run preview      # Preview the production build locally
 
-# Regenerate stars.json from HYG catalogue (hygdata_v3.csv must exist locally — not committed)
-python3 scripts/process_hyg.py hygdata_v3.csv public/data/stars.json
-python3 scripts/process_hyg.py hygdata_v3.csv public/data/stars.json --max-ly 50
+# Regenerate stars.json from HYG catalogue (not committed — download first):
+#   curl -L https://www.astronexus.com/downloads/catalogs/hygdata_v37.csv.gz | gunzip > hygdata_v37.csv
+python3 scripts/process_hyg.py hygdata_v37.csv public/data/stars.json
+python3 scripts/process_hyg.py hygdata_v37.csv public/data/stars.json --max-ly 20
 ```
 
 There are no automated tests yet. CI validates: TypeScript type-check, Vite build, JSON syntax in `public/data/*.json`, and Python syntax in `scripts/`.

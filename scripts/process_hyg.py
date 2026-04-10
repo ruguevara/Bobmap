@@ -30,6 +30,29 @@ def spectral_class(spect: str) -> str:
     return 'U'
 
 
+def clean_bf(bf: str) -> str:
+    """Clean a Bayer-Flamsteed designation into a readable label.
+
+    HYG encodes these as e.g. '52Tau Cet', '61    Cyg', 'Eps Ind'.
+    - If the string is ONLY a Flamsteed number + constellation (e.g. '52Tau Cet'),
+      strip the number: → 'Tau Cet'.
+    - If the Flamsteed number IS the identifier (e.g. '61    Cyg'), keep it: → '61 Cyg'.
+    - Always collapse internal whitespace.
+    """
+    import re
+    bf = bf.strip()
+    # Check if leading digits are followed by a Bayer letter-sequence (Greek abbrev)
+    # e.g. '52Tau Cet' — the 'Tau' is a Bayer letter, number is redundant
+    # vs '61    Cyg' — no Bayer letter follows, number is the Flamsteed ID
+    m = re.match(r'^(\d+)([A-Z][a-z]+\s)', bf)
+    if m:
+        # Has Bayer letter after the number — strip the number
+        bf = bf[len(m.group(1)):]
+    # Collapse multiple spaces
+    bf = re.sub(r'\s+', ' ', bf).strip()
+    return bf
+
+
 def process(input_path: str, output_path: str, max_ly: float) -> None:
     stars: list[dict] = []
     skipped = 0
@@ -65,7 +88,9 @@ def process(input_path: str, output_path: str, max_ly: float) -> None:
             hip = int(hip_raw) if hip_raw else None
 
             name = row.get('proper', '').strip() or None
-            bf = row.get('bf', '').strip() or None
+            bf_raw = row.get('bf', '').strip()
+            bf = clean_bf(bf_raw) if bf_raw else None
+            gl = row.get('gl', '').strip() or None
             spect_raw = row.get('spect', '').strip()
 
             stars.append({
@@ -73,6 +98,7 @@ def process(input_path: str, output_path: str, max_ly: float) -> None:
                 'hip': hip,
                 'name': name,
                 'bf': bf,
+                'gl': gl,
                 'x': x,
                 'y': y,
                 'z': z,
