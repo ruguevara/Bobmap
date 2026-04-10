@@ -44,7 +44,7 @@ jobs:
 
       - name: Check JSON syntax
         run: |
-          for f in data/*.json; do
+          for f in public/data/*.json; do
             python3 -c "import json,sys; json.load(open('$f'))" \
               && echo "✓ $f" \
               || { echo "✗ $f is invalid JSON"; exit 1; }

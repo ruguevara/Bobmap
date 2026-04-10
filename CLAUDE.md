@@ -11,11 +11,11 @@ npx tsc --noEmit     # Type-check only (no output files)
 npm run preview      # Preview the production build locally
 
 # Regenerate stars.json from HYG catalogue (hygdata_v3.csv must exist locally — not committed)
-python3 scripts/process_hyg.py hygdata_v3.csv data/stars.json
-python3 scripts/process_hyg.py hygdata_v3.csv data/stars.json --max-ly 50
+python3 scripts/process_hyg.py hygdata_v3.csv public/data/stars.json
+python3 scripts/process_hyg.py hygdata_v3.csv public/data/stars.json --max-ly 50
 ```
 
-There are no automated tests yet. CI validates: TypeScript type-check, Vite build, JSON syntax in `data/*.json`, and Python syntax in `scripts/`.
+There are no automated tests yet. CI validates: TypeScript type-check, Vite build, JSON syntax in `public/data/*.json`, and Python syntax in `scripts/`.
 
 ## Architecture
 
@@ -31,7 +31,7 @@ There are no automated tests yet. CI validates: TypeScript type-check, Vite buil
 
 **`src/types/bobiverse.ts`** — `BobiverseSystem`, `Bob`, `Civilization`, `Ship` interfaces for Phase 2+ overlays. Not yet rendered.
 
-**`data/stars.json`** — auto-generated from HYG; do not edit manually. `data/systems.json` — hand-maintained Bobiverse system info; edit freely, always include `notes` with book/chapter source.
+**`public/data/stars.json`** — auto-generated from HYG; do not edit manually. `public/data/systems.json` — hand-maintained Bobiverse system info; edit freely, always include `notes` with book/chapter source.
 
 ## Phased roadmap context
 
