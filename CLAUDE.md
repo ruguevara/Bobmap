@@ -32,13 +32,26 @@ There are no automated tests yet. CI validates: TypeScript type-check, Vite buil
 
 ## Architecture
 
-**Entry point**: `src/main.ts` — fetches star data via `loadStars()`, then passes it to `StarMap`.
+**Entry point**: `src/main.ts` — fetches star data via `loadStars()`, groups it into systems via `groupIntoSystems()`, wraps it in a `SystemStore`, then hands it to `StarMap`.
 
-**`src/scene/StarMap.ts`** — the entire Three.js scene lives here as a class. Stars are rendered as a single `THREE.Points` object (one `BufferGeometry` with position + color attributes). Sol is a separate `SphereGeometry` at the origin. Reference grid circles are `LineLoop` objects at 10/25/50/100 ly radii. OrbitControls provides drag/scroll/pan.
+**`src/scene/StarMap.ts`** — Three.js scene orchestrator. Stars are rendered as a single `THREE.Points` object. The scene is split into two groups:
+- `worldGroup` — stars, labels, projection lines. Translated by `-origin` on every `setOrigin` so the current origin sits at (0,0,0).
+- `staticOverlay` — grid and ly reference circles. Always centred on (0,0,0).
 
-**Coordinate mapping**: HYG database uses `(x, y, z)` in parsecs where `z` = north celestial pole. StarMap swaps: `positions.push(s.x, s.z, s.y)` so HYG-z becomes Three.js-Y (galactic plane horizontal). 1 Three.js unit = 1 parsec.
+Rendering is delegated to **scene layers** (`src/scene/layers/`):
+- `GridLayer` — `GridHelper` + `LineLoop` radius circles (10/25/50/100 ly)
+- `ProjectionLayer` — faint vertical drop lines to the galactic plane; supports `setMode(ProjectionMode)`
+- `LabelLayer` — CSS2D star-name labels
 
-**`src/data/loader.ts`** — async fetch of `/data/stars.json`. Future loaders (`loadSystems()`, `loadBobs()`) will follow the same pattern.
+Each layer implements `SceneLayer` (`build / setVisible / dispose`).
+
+**Coordinate convention** (IAU J2000 galactic frame, 1 unit = 1 parsec):  
+`Star.gx` → galactic centre · `Star.gy` → galactic north pole (Three.js Y / "up") · `Star.gz` → completes frame.  
+The equatorial→galactic rotation is applied once in `process_hyg.py` and stored in `stars.json` — no runtime coordinate math.
+
+**`src/data/groupSystems.ts`** — pure function `groupIntoSystems(stars)`. Collapses HYG component rows into `StarSystem` entities using union-find (Gliese root, name stem, proximity rules). `buildSystem` reads `gx/gy/gz` directly for the centroid.
+
+**`src/data/SystemStore.ts`** — observable store. Holds `systems` array and `origin` (current viewpoint system). Call `store.setOrigin(id)` to re-centre the map; `StarMap` subscribes via `store.onOriginChange()`.
 
 **`src/types/star.ts`** — `Star` interface matching the JSON schema produced by `process_hyg.py`.
 
@@ -48,9 +61,9 @@ There are no automated tests yet. CI validates: TypeScript type-check, Vite buil
 
 ## Phased roadmap context
 
-The project is in Phase 1 (star map only). TODO comments in the code mark Phase 2+ integration points:
-- `StarMap.ts`: raycaster for hover/click labels, separate overlay group for Bobiverse systems
+Phase 1 (star map) is complete. TODO comments in the code mark Phase 2+ integration points:
+- `StarMap.ts`: raycaster for hover/click → `store.setOrigin(id)`
 - `loader.ts`: `loadSystems()` and `loadBobs()` stubs
 - `bobiverse.ts`: types are defined but not rendered yet
 
-Phase 6 GitHub Pages deploy is stubbed but commented out in `.github/workflows/ci.yml`.
+GitHub Pages deploy is live at `bobmap.pixelmatter.org`.

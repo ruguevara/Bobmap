@@ -3,7 +3,7 @@
 Interactive 3D map of stellar systems from the *Bobiverse* book series by Dennis E. Taylor.  
 A fan project — reference and illustration for readers.
 
-**Live demo:** _coming soon (GitHub Pages)_
+**Live demo:** https://bobmap.pixelmatter.org
 
 _AI assistance provided by GUPPI (General Unit Primary Peripheral Interface)._
 
@@ -16,8 +16,8 @@ _AI assistance provided by GUPPI (General Unit Primary Peripheral Interface)._
 | 3D scene | [Three.js](https://threejs.org) |
 | Language | TypeScript |
 | Build | [Vite](https://vitejs.dev) |
-| Star data | [HYG Database v3](https://github.com/astronexus/HYGDatabase) |
-| Bobiverse data | Hand-maintained JSON files in `/data` |
+| Star data | [HYG Database v3.7](https://github.com/astronexus/HYGDatabase) |
+| Bobiverse data | Hand-maintained JSON files in `public/data/` |
 | Deploy | GitHub Pages via GitHub Actions |
 
 ---
@@ -36,41 +36,64 @@ npm run dev
 
 ## Star data
 
-The repository ships with a small sample (`data/stars.json`, ~25 nearest stars).  
-To generate the full dataset (≈ 2 000 stars within 100 ly):
+The repository ships with `public/data/stars.json` (~110 nearest stars, ≤ 20 ly).  
+Coordinates are pre-rotated into the IAU J2000 galactic frame by `process_hyg.py`.
+
+To regenerate from the full HYG catalogue:
 
 ```bash
-# 1. Download HYG catalogue (do NOT commit this file — it's in .gitignore)
-curl -L https://raw.githubusercontent.com/astronexus/HYGDatabase/master/hygdata_v3.csv \
-     -o hygdata_v3.csv
+# 1. Download HYG catalogue (not committed — large file)
+curl -L https://www.astronexus.com/downloads/catalogs/hygdata_v37.csv.gz | gunzip > hygdata_v37.csv
 
 # 2. Run the conversion script
-python3 scripts/process_hyg.py hygdata_v3.csv data/stars.json
+python3 scripts/process_hyg.py hygdata_v37.csv public/data/stars.json --max-ly 20
 
-# Optional: different radius
-python3 scripts/process_hyg.py hygdata_v3.csv data/stars.json --max-ly 50
+# Optional: larger radius
+python3 scripts/process_hyg.py hygdata_v37.csv public/data/stars.json --max-ly 50
 ```
+
+---
+
+## Architecture
+
+```
+src/
+  main.ts               Entry point — loads data, boots StarMap
+  scene/
+    StarMap.ts          Three.js scene orchestrator (camera, renderer, controls)
+    layers/
+      SceneLayer.ts     Shared interface + ProjectionMode type
+      GridLayer.ts      Reference grid + light-year radius circles
+      ProjectionLayer.ts  Vertical drop lines to the galactic plane
+      LabelLayer.ts     CSS2D star-name labels
+  data/
+    loader.ts           Async fetch of stars.json
+    groupSystems.ts     Groups HYG star rows into StarSystem entities
+    SystemStore.ts      Observable store — holds systems + current origin
+  types/
+    star.ts             Star interface (galactic coords gx/gy/gz, pre-rotated)
+    system.ts           StarSystem interface
+    bobiverse.ts        Phase 2+ overlay types (not yet rendered)
+
+public/data/
+  stars.json            Auto-generated from HYG. Do not edit manually.
+  systems.json          Bobiverse-specific system info. Edit freely!
+
+scripts/
+  process_hyg.py        HYG CSV → stars.json (applies equatorial→galactic rotation)
+```
+
+**Coordinate convention (IAU J2000 galactic frame, 1 unit = 1 parsec):**  
+`gx` → toward galactic centre (Sgr A*) · `gy` → galactic north pole (Three.js Y) · `gz` → completes the frame
 
 ---
 
 ## Data files
 
-```
-data/
-  stars.json       Auto-generated from HYG. Do not edit manually.
-  systems.json     Bobiverse-specific system info. Edit freely!
-
-  # planned (Phase 2+)
-  bobs.json        Bob characters, origin, status, trajectory
-  civilizations.json  Races and territories
-  ships.json       Ships with positions by in-universe year
-```
-
 ### Contributing Bobiverse data
 
-You don't need to know TypeScript. Edit the JSON files directly:
+You don't need to know TypeScript. Edit `public/data/systems.json` directly:
 
-**`data/systems.json`** — add a system:
 ```json
 {
   "star_hip": 16537,
@@ -81,7 +104,7 @@ You don't need to know TypeScript. Edit the JSON files directly:
 }
 ```
 
-Find `star_hip` values in `data/stars.json` (the `hip` field).  
+Find `star_hip` values in `public/data/stars.json` (the `hip` field).  
 Always add a `notes` with a book/chapter source so it can be verified.
 
 ---
@@ -90,13 +113,15 @@ Always add a `notes` with a book/chapter source so it can be verified.
 
 ### Phase 1 — Star map ✦ _current_
 - [x] Project skeleton (Vite + TypeScript + Three.js)
-- [x] Sample star data (25 nearest stars)
-- [x] HYG processing script
-- [ ] Full HYG dataset loaded and rendered (≤ 100 ly)
-- [ ] Stars coloured by spectral class
-- [ ] Orbit controls (rotate / zoom / pan)
-- [ ] Sol highlighted
-- [ ] Star name labels on hover / click
+- [x] HYG processing script with equatorial→galactic rotation
+- [x] Stars coloured by spectral class
+- [x] OrbitControls (rotate / zoom / pan)
+- [x] Sol highlighted
+- [x] Star name labels (CSS2D, named systems ≤ 20 ly)
+- [x] Multi-star systems grouped (binaries, triples) with component count
+- [x] Vertical projection lines to galactic plane
+- [x] Scene layers extracted (Grid, Projection, Labels) — individually toggleable
+- [x] GitHub Pages deploy
 
 ### Phase 2 — Bobiverse overlay
 - [ ] Render named systems from `systems.json`
@@ -119,10 +144,9 @@ Always add a `notes` with a book/chapter source so it can be verified.
 - [ ] Civilisation territory markers
 - [ ] Event log synced to timeline
 
-### Phase 6 — Polish & deploy
-- [ ] GitHub Pages deploy via GitHub Actions
+### Phase 6 — Polish
 - [ ] `CONTRIBUTING.md` with full guide
-- [ ] JSON schema validation in CI (so bad PRs are caught automatically)
+- [ ] JSON schema validation in CI
 - [ ] Mobile touch controls
 
 ---
@@ -132,7 +156,7 @@ Always add a `notes` with a book/chapter source so it can be verified.
 Pull requests welcome! Please:
 - Add a source (book title + chapter) for any canon data
 - Keep one logical change per PR
-- For data-only PRs you only need to edit files in `/data` — no TypeScript knowledge needed
+- For data-only PRs you only need to edit files in `public/data/` — no TypeScript knowledge needed
 
 ---
 

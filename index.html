@@ -44,13 +44,13 @@
 
       #subtitle {
         font-size: 11px;
-        color: #556;
+        color: #889;
         margin-top: 2px;
       }
 
       #status {
         font-size: 11px;
-        color: #556;
+        color: #889;
         text-align: right;
       }
 
@@ -59,9 +59,27 @@
         bottom: 16px;
         left: 20px;
         font-size: 11px;
-        color: #334;
+        color: #667;
         pointer-events: none;
         line-height: 1.6;
+      }
+
+      #footer-link {
+        position: fixed;
+        bottom: 16px;
+        right: 20px;
+        font-size: 11px;
+        color: #667;
+        line-height: 1.6;
+      }
+
+      #footer-link a {
+        color: #7799bb;
+        text-decoration: none;
+      }
+
+      #footer-link a:hover {
+        color: #aad;
       }
 
       /* TODO: sidebar panel for filters — Phase 3 */
@@ -80,6 +98,10 @@
 
     <div id="controls-hint">
       Drag · rotate &nbsp;|&nbsp; Scroll · zoom &nbsp;|&nbsp; Right-drag · pan
+    </div>
+
+    <div id="footer-link">
+      <a href="https://github.com/ruguevara/Bobiverse" target="_blank" rel="noopener">GitHub</a>
     </div>
 
     <script type="module" src="/src/main.ts"></script>
