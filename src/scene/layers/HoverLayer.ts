@@ -47,7 +47,6 @@ export class HoverLayer implements SceneLayer {
     pos.setXYZ(0, ox, oy, oz)
     pos.setXYZ(1, x, y, z)
     pos.needsUpdate = true
-    this.line.geometry.computeBoundingSphere()
 
     this.label.position.set((ox + x) / 2, (oy + y) / 2, (oz + z) / 2)
 
