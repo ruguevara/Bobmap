@@ -22,7 +22,7 @@ const SPECTRAL_COLOR: Record<string, number> = {
  * Consumes a `SystemStore` — never touches raw `Star` rows. The scene is
  * split into two groups:
  *
- *   worldGroup    — stars, labels, projection lines, halo rings. Lives in
+ *   worldGroup    — stars, labels, projection lines. Lives in
  *                   absolute galactic parsecs; translated by -origin on
  *                   every `setOrigin` so the current origin sits at (0,0,0).
  *   staticOverlay — grid and ly reference circles. Stay put, always
@@ -154,21 +154,22 @@ export class StarMap {
     })))
 
     // Halo rings for multiple-component systems (billboarded sprites).
-    const haloTex = StarMap.makeHaloTexture()
-    const haloMat = new THREE.SpriteMaterial({
-      map: haloTex,
-      color: 0xaad4ff,
-      transparent: true,
-      opacity: 0.75,
-      depthWrite: false,
-    })
-    for (const s of systems) {
-      if (s.components.length < 2) continue
-      const sprite = new THREE.Sprite(haloMat)
-      sprite.position.set(s.galacticPos.x, s.galacticPos.y, s.galacticPos.z)
-      sprite.scale.set(0.9, 0.9, 0.9)
-      this.worldGroup.add(sprite)
-    }
+    // Disabled — too noisy. Re-enable when view-settings panel is wired up.
+    // const haloTex = StarMap.makeHaloTexture()
+    // const haloMat = new THREE.SpriteMaterial({
+    //   map: haloTex,
+    //   color: 0xaad4ff,
+    //   transparent: true,
+    //   opacity: 0.75,
+    //   depthWrite: false,
+    // })
+    // for (const s of systems) {
+    //   if (s.components.length < 2) continue
+    //   const sprite = new THREE.Sprite(haloMat)
+    //   sprite.position.set(s.galacticPos.x, s.galacticPos.y, s.galacticPos.z)
+    //   sprite.scale.set(0.9, 0.9, 0.9)
+    //   this.worldGroup.add(sprite)
+    // }
 
     // Labels
     for (const s of systems) {
