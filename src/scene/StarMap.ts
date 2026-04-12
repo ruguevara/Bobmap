@@ -1,10 +1,11 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
+import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import type { StarSystem } from '../types/system'
 import type { SystemStore } from '../data/SystemStore'
 import { GridLayer } from './layers/GridLayer'
 import { ProjectionLayer } from './layers/ProjectionLayer'
+import { LabelLayer } from './layers/LabelLayer'
 
 /** Harvard spectral class → approximate colour */
 const SPECTRAL_COLOR: Record<string, number> = {
@@ -50,6 +51,7 @@ export class StarMap {
   private unsubscribeOrigin: () => void
   private gridLayer: GridLayer
   private projectionLayer!: ProjectionLayer
+  private labelLayer!: LabelLayer
 
   // TODO Phase 2: separate group for Bobiverse overlays
 
@@ -106,6 +108,7 @@ export class StarMap {
     window.removeEventListener('resize', this.onResize)
     this.gridLayer.dispose()
     this.projectionLayer.dispose()
+    this.labelLayer.dispose()
     this.renderer.dispose()
     this.container.removeChild(this.renderer.domElement)
     this.container.removeChild(this.labelRenderer.domElement)
@@ -165,38 +168,11 @@ export class StarMap {
     //   this.worldGroup.add(sprite)
     // }
 
-    // Labels
-    for (const s of systems) {
-      if (!s.label) continue
-      const offset = 0.25 + s.dist_ly * 0.002
-      this.addLabel(
-        s.label,
-        s.galacticPos.x,
-        s.galacticPos.y + offset,
-        s.galacticPos.z,
-        s.id === 0 ? 'rgba(255,238,120,0.9)' : 'rgba(180,210,255,0.85)',
-      )
-    }
+    this.labelLayer = new LabelLayer(systems)
+    this.labelLayer.build(this.worldGroup)
 
     // TODO Phase 2: raycaster for hover/click — call store.setOrigin(s.id) on click
     // TODO Phase 3: rebuild world when filters change
-  }
-
-  private addLabel(text: string, x: number, y: number, z: number, color: string): void {
-    const div = document.createElement('div')
-    div.textContent = text
-    div.style.cssText = [
-      `color: ${color}`,
-      'font-size: 10px',
-      'font-family: monospace',
-      'pointer-events: none',
-      'padding: 0 2px',
-      'text-shadow: 0 0 5px #000, 0 0 5px #000',
-      'white-space: nowrap',
-    ].join(';')
-    const obj = new CSS2DObject(div)
-    obj.position.set(x, y, z)
-    this.worldGroup.add(obj)
   }
 
   /** Generate a soft circular disk texture for star points. */
