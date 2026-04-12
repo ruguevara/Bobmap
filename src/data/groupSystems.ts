@@ -10,23 +10,6 @@ import type { StarSystem } from '../types/system'
  */
 
 /**
- * Transform HYG equatorial Cartesian (x,y,z in parsecs) into the IAU J2000
- * galactic frame used by `StarSystem.galacticPos`.
- *
- *   X → toward galactic centre (Sgr A*)
- *   Y → galactic north pole ("up")
- *   Z → completes a right-handed frame
- */
-export function toGalactic(hx: number, hy: number, hz: number): { x: number; y: number; z: number } {
-  // IAU J2000 equatorial → galactic rotation matrix
-  const xg = -0.054876 * hx - 0.873437 * hy - 0.483835 * hz
-  const yg =  0.494109 * hx - 0.444830 * hy + 0.746982 * hz
-  const zg = -0.867666 * hx - 0.198076 * hy + 0.455984 * hz
-  // Re-map so galactic north (zg) becomes Three.js Y (up).
-  return { x: xg, y: zg, z: yg }
-}
-
-/**
  * Group stars into systems.
  *
  * Two stars are considered components of the same system when **any** of:
@@ -99,7 +82,7 @@ export function groupIntoSystems(stars: Star[], epsilonPc = 0.1): StarSystem[] {
     const a = stars[i]
     for (let j = i + 1; j < n; j++) {
       const b = stars[j]
-      const dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z
+      const dx = a.gx - b.gx, dy = a.gy - b.gy, dz = a.gz - b.gz
       if (dx * dx + dy * dy + dz * dz < eps2) union(i, j)
     }
   }
@@ -129,8 +112,7 @@ export function buildSystem(rawComponents: Star[]): StarSystem {
   // Geometric centre in galactic frame (mean of components).
   let sx = 0, sy = 0, sz = 0
   for (const c of components) {
-    const g = toGalactic(c.x, c.y, c.z)
-    sx += g.x; sy += g.y; sz += g.z
+    sx += c.gx; sy += c.gy; sz += c.gz
   }
   const galacticPos = {
     x: sx / components.length,

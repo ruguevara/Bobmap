@@ -16,10 +16,12 @@ export interface Star {
   bf: string | null
   /** Gliese / GJ catalogue designation */
   gl: string | null
-  /** Position in parsecs from Sol */
-  x: number
-  y: number
-  z: number
+  /** Position in parsecs from Sol, IAU J2000 galactic frame.
+   *  gx → galactic centre, gy → galactic north (Three.js Y), gz → completes frame.
+   *  Pre-rotated by process_hyg.py — no further transform needed at runtime. */
+  gx: number
+  gy: number
+  gz: number
   /** Distance in light-years */
   dist_ly: number
   /** Apparent visual magnitude */

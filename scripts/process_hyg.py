@@ -22,6 +22,21 @@ import sys
 PC_TO_LY = 3.26156
 
 
+def to_galactic(hx: float, hy: float, hz: float) -> tuple[float, float, float]:
+    """Rotate HYG J2000 equatorial Cartesian → IAU galactic frame.
+
+    Output axes (Three.js convention):
+      gx → toward galactic centre (Sgr A*)
+      gy → galactic north pole (Three.js Y / "up")
+      gz → completes the right-handed frame
+    """
+    xg = -0.054876 * hx - 0.873437 * hy - 0.483835 * hz
+    yg =  0.494109 * hx - 0.444830 * hy + 0.746982 * hz
+    zg = -0.867666 * hx - 0.198076 * hy + 0.455984 * hz
+    # zg is galactic north; map it to Three.js Y
+    return xg, zg, yg
+
+
 def spectral_class(spect: str) -> str:
     """Return the first letter of the Harvard spectral class, or 'U' if unknown."""
     for ch in spect:
@@ -76,9 +91,13 @@ def process(input_path: str, output_path: str, max_ly: float) -> None:
                 continue
 
             try:
-                x = round(float(row['x']), 4)
-                y = round(float(row['y']), 4)
-                z = round(float(row['z']), 4)
+                hx = float(row['x'])
+                hy = float(row['y'])
+                hz = float(row['z'])
+                gx, gy, gz = to_galactic(hx, hy, hz)
+                gx = round(gx, 4)
+                gy = round(gy, 4)
+                gz = round(gz, 4)
                 mag = round(float(row['mag']), 2) if row.get('mag') else 99.0
             except (ValueError, KeyError):
                 skipped += 1
@@ -99,9 +118,9 @@ def process(input_path: str, output_path: str, max_ly: float) -> None:
                 'name': name,
                 'bf': bf,
                 'gl': gl,
-                'x': x,
-                'y': y,
-                'z': z,
+                'gx': gx,
+                'gy': gy,
+                'gz': gz,
                 'dist_ly': round(dist_ly, 2),
                 'mag': mag,
                 'spect': spectral_class(spect_raw),
@@ -116,9 +135,9 @@ def process(input_path: str, output_path: str, max_ly: float) -> None:
         'name': 'Sol',
         'bf': None,
         'gl': None,
-        'x': 0.0,
-        'y': 0.0,
-        'z': 0.0,
+        'gx': 0.0,
+        'gy': 0.0,
+        'gz': 0.0,
         'dist_ly': 0.0,
         'mag': -26.74,
         'spect': 'G',
