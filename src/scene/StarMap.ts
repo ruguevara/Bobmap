@@ -90,6 +90,7 @@ export class StarMap {
     this.controls.dampingFactor = 0.06
     this.controls.minDistance = 0.5
     this.controls.maxDistance = 400
+    this.raycaster.params.Points!.threshold = 0.5
 
     this.worldGroup = new THREE.Group()
     this.staticOverlay = new THREE.Group()
@@ -104,6 +105,8 @@ export class StarMap {
     this.unsubscribeOrigin = store.onOriginChange(origin => this.applyOrigin(origin))
 
     window.addEventListener('resize', this.onResize)
+    this.renderer.domElement.addEventListener('pointerdown', this.onPointerDown)
+    this.renderer.domElement.addEventListener('click', this.onClick)
     this.animate()
   }
 
@@ -111,6 +114,8 @@ export class StarMap {
     if (this.animId !== null) cancelAnimationFrame(this.animId)
     this.unsubscribeOrigin()
     window.removeEventListener('resize', this.onResize)
+    this.renderer.domElement.removeEventListener('pointerdown', this.onPointerDown)
+    this.renderer.domElement.removeEventListener('click', this.onClick)
     this.gridLayer.dispose()
     if (this.projectionLayer) this.projectionLayer.dispose()
     if (this.labelLayer) this.labelLayer.dispose()
@@ -198,7 +203,6 @@ export class StarMap {
     this.labelLayer = new LabelLayer(systems)
     this.labelLayer.build(this.worldGroup)
 
-    // TODO Phase 2: raycaster for hover/click — call store.setOrigin(s.id) on click
     // TODO Phase 3: rebuild world when filters change
   }
 
@@ -241,6 +245,28 @@ export class StarMap {
     ctx.arc(cx, cy, size * 0.42, 0, Math.PI * 2)
     ctx.stroke()
     return new THREE.CanvasTexture(canvas)
+  }
+
+  private onPointerDown = (e: PointerEvent): void => {
+    this.pointerDownPos.set(e.clientX, e.clientY)
+  }
+
+  private onClick = (e: MouseEvent): void => {
+    const dx = e.clientX - this.pointerDownPos.x
+    const dy = e.clientY - this.pointerDownPos.y
+    if (dx * dx + dy * dy > 16) return  // dragged > 4px — ignore
+    const rect = this.renderer.domElement.getBoundingClientRect()
+    this.pointer.set(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1,
+    )
+    this.raycaster.setFromCamera(this.pointer, this.camera)
+    if (!this.stars) return
+    const hits = this.raycaster.intersectObject(this.stars)
+    if (hits.length > 0 && hits[0].index !== undefined && hits[0].index < this.systemsInWorld.length) {
+      const sys = this.systemsInWorld[hits[0].index]
+      if (sys) this.store.setOrigin(sys.id)
+    }
   }
 
   private animate = (): void => {
