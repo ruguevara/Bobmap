@@ -18,13 +18,13 @@ const SPECTRAL_COLOR: Record<string, number> = {
 /**
  * Three.js scene: interactive 3D star map.
  *
- * Coordinate convention (from HYG):
- *   x → vernal equinox (RA 0h, Dec 0°)
- *   y → RA 6h, Dec 0°
- *   z → north celestial pole
+ * Coordinate convention (galactic, J2000):
+ *   Three.js X → toward galactic center (Sgr A*)
+ *   Three.js Y → galactic north pole ("up")
+ *   Three.js Z → Yg (completes the frame)
  *
- * We map HYG z → Three.js Y ("up") so the galactic plane
- * is roughly horizontal in the default view.
+ * HYG equatorial Cartesian coords are transformed at load time
+ * via the IAU J2000 galactic rotation matrix.
  * Units: 1 Three.js unit = 1 parsec.
  */
 export class StarMap {
@@ -78,6 +78,15 @@ export class StarMap {
 
   // ─── Public API ───────────────────────────────────────────────────────────
 
+  private static toGalactic(hx: number, hy: number, hz: number): [number, number, number] {
+    // IAU J2000 equatorial → galactic rotation matrix
+    const xg = -0.054876 * hx - 0.873437 * hy - 0.483835 * hz
+    const yg =  0.494109 * hx - 0.444830 * hy + 0.746982 * hz
+    const zg = -0.867666 * hx - 0.198076 * hy + 0.455984 * hz
+    // Map: Xg→X, Zg→Y (north up), Yg→Z
+    return [xg, zg, yg]
+  }
+
   loadStars(stars: Star[]): void {
     const positions: number[] = []
     const colors: number[] = []
@@ -85,7 +94,7 @@ export class StarMap {
 
     for (const s of stars) {
       if (s.dist_ly === 0) continue // Sol rendered separately
-      const x = s.x, y = s.z, z = s.y // HYG z → Three.js Y
+      const [x, y, z] = StarMap.toGalactic(s.x, s.y, s.z)
       positions.push(x, y, z)
       col.set(SPECTRAL_COLOR[s.spect] ?? SPECTRAL_COLOR.default)
       colors.push(col.r, col.g, col.b)
@@ -147,7 +156,8 @@ export class StarMap {
       if (!label) continue
       // HYG→Three.js coord swap; offset label above star in Y
       const offset = 0.25 + s.dist_ly * 0.002
-      addLabel(label, s.x, s.z + offset, s.y)
+      const [lx, ly, lz] = StarMap.toGalactic(s.x, s.y, s.z)
+      addLabel(label, lx, ly + offset, lz)
     }
 
     // TODO Phase 2: raycaster for hover/click labels
@@ -181,7 +191,7 @@ export class StarMap {
     this.scene.add(new THREE.Mesh(ringGeo, ringMat))
   }
 
-  /** Faint reference grid on the celestial equatorial plane (HYG z=0) */
+  /** Faint reference grid on the galactic plane (galactic latitude = 0) */
   private addGrid(): void {
     const grid = new THREE.GridHelper(120, 30, 0x2a2a5a, 0x1a1a3a)
     this.scene.add(grid)
