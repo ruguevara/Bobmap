@@ -30,7 +30,7 @@ npm run dev
 # open http://localhost:5173
 ```
 
-**Controls:** drag to rotate · scroll to zoom · right-drag to pan
+**Controls:** drag to rotate · scroll to zoom · click to set origin
 
 ---
 
@@ -66,6 +66,7 @@ src/
       GridLayer.ts      Reference grid + light-year radius circles
       ProjectionLayer.ts  Vertical drop lines to the galactic plane
       LabelLayer.ts     CSS2D star-name labels
+      HoverLayer.ts     Distance line + distance label on star hover
   data/
     loader.ts           Async fetch of stars.json
     groupSystems.ts     Groups HYG star rows into StarSystem entities
@@ -111,7 +112,7 @@ Always add a `notes` with a book/chapter source so it can be verified.
 
 ## Roadmap
 
-### Phase 1 — Star map ✦ _current_
+### Phase 1 — Star map ✦ _complete_
 - [x] Project skeleton (Vite + TypeScript + Three.js)
 - [x] HYG processing script with equatorial→galactic rotation
 - [x] Stars coloured by spectral class
@@ -120,17 +121,21 @@ Always add a `notes` with a book/chapter source so it can be verified.
 - [x] Star name labels (CSS2D, named systems ≤ 20 ly)
 - [x] Multi-star systems grouped (binaries, triples) with component count
 - [x] Vertical projection lines to galactic plane
-- [x] Scene layers extracted (Grid, Projection, Labels) — individually toggleable
+- [x] Scene layers extracted (Grid, Projection, Labels, Hover) — individually toggleable
+- [x] Click a star to set it as origin (map re-centres)
+- [x] Hover a star to see a distance line from origin + distance in light-years
+- [x] Radius slider (5–20 ly) filters visible stars by distance from current origin
+- [x] Star class legend (bottom-right)
+- [x] Origin info panel (top-left, updates on origin change)
 - [x] GitHub Pages deploy
 
-### Phase 2 — Bobiverse overlay
+### Phase 2 — Bobiverse overlay ✦ _current_
 - [ ] Render named systems from `systems.json`
 - [ ] Click star → info panel (name, distance, Bobs, notes)
 - [ ] Highlight Bobiverse systems vs background stars
 
 ### Phase 3 — Filters
 - [ ] Filter by spectral class (O B A F G K M)
-- [ ] Filter by distance (slider)
 - [ ] Search by star name
 - [ ] Toggle: show all stars / only named systems
 

@@ -2,6 +2,7 @@ import { StarMap } from './scene/StarMap'
 import { loadStars } from './data/loader'
 import { groupIntoSystems } from './data/groupSystems'
 import { SystemStore } from './data/SystemStore'
+import type { StarSystem } from './types/system'
 
 const container = document.getElementById('app')!
 const statusEl = document.getElementById('status')!
@@ -36,6 +37,21 @@ loadStars()
     })
 
     store.onOriginChange(() => applyFilter())
+
+    const originNameEl = document.getElementById('origin-name')!
+    const originDetailsEl = document.getElementById('origin-details')!
+
+    const updateOriginPanel = (sys: StarSystem): void => {
+      originNameEl.textContent = sys.label ?? `HIP ${sys.id}`
+      originDetailsEl.innerHTML = [
+        `${sys.dist_ly.toFixed(2)} ly from Sol`,
+        `Type: ${sys.primarySpect}`,
+        sys.components.length > 1 ? `${sys.components.length} components` : '',
+      ].filter(Boolean).join('<br>')
+    }
+
+    updateOriginPanel(store.origin)
+    store.onOriginChange(updateOriginPanel)
     applyFilter()
   })
   .catch(err => {

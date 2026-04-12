@@ -34,14 +34,17 @@ There are no automated tests yet. CI validates: TypeScript type-check, Vite buil
 
 **Entry point**: `src/main.ts` — fetches star data via `loadStars()`, groups it into systems via `groupIntoSystems()`, wraps it in a `SystemStore`, then hands it to `StarMap`.
 
-**`src/scene/StarMap.ts`** — Three.js scene orchestrator. Stars are rendered as a single `THREE.Points` object. The scene is split into two groups:
+**`src/scene/StarMap.ts`** — Three.js scene orchestrator. Holds `private store: SystemStore`. Stars are rendered as a single `THREE.Points` object. The scene is split into two groups:
 - `worldGroup` — stars, labels, projection lines. Translated by `-origin` on every `setOrigin` so the current origin sits at (0,0,0).
 - `staticOverlay` — grid and ly reference circles. Always centred on (0,0,0).
+
+The constructor does **not** call `rebuildWorld` — `main.ts` calls `setVisibleSystems(systems)` on init via `applyFilter()`. `setVisibleSystems` is the public API for updating the visible star set; it delegates to the private `rebuildWorld`.
 
 Rendering is delegated to **scene layers** (`src/scene/layers/`):
 - `GridLayer` — `GridHelper` + `LineLoop` radius circles (10/25/50/100 ly)
 - `ProjectionLayer` — faint vertical drop lines to the galactic plane; supports `setMode(ProjectionMode)`
 - `LabelLayer` — CSS2D star-name labels
+- `HoverLayer` — distance line + CSS2D distance label shown on star hover
 
 Each layer implements `SceneLayer` (`build / setVisible / dispose`).
 
@@ -61,8 +64,14 @@ The equatorial→galactic rotation is applied once in `process_hyg.py` and store
 
 ## Phased roadmap context
 
-Phase 1 (star map) is complete. TODO comments in the code mark Phase 2+ integration points:
-- `StarMap.ts`: raycaster for hover/click → `store.setOrigin(id)`
+Phase 1 (star map) is complete and includes interactive features:
+- Click a star → `store.setOrigin(id)` re-centres the map
+- Hover a star → `HoverLayer` shows a distance line + distance label
+- Radius slider (5–20 ly) calls `starMap.setVisibleSystems()` via `applyFilter()` in `main.ts`
+- Star class legend (bottom-right corner of `index.html`)
+- Origin info panel (top-left, wired in `main.ts` via `store.onOriginChange`)
+
+Phase 2 integration points remain (TODO comments in the code):
 - `loader.ts`: `loadSystems()` and `loadBobs()` stubs
 - `bobiverse.ts`: types are defined but not rendered yet
 

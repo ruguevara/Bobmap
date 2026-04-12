@@ -102,6 +102,34 @@
         accent-color: #4488cc;
         cursor: pointer;
       }
+      #legend {
+        position: fixed;
+        bottom: 40px;
+        right: 20px;
+        font-size: 10px;
+        color: #889;
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      #origin-info {
+        position: fixed;
+        top: 60px;
+        left: 20px;
+        font-size: 11px;
+        color: #889;
+        pointer-events: none;
+        line-height: 1.6;
+      }
+      #origin-name {
+        font-size: 13px;
+        color: #adf;
+        margin-bottom: 2px;
+      }
     </style>
   </head>
   <body>
@@ -121,8 +149,23 @@
       <span id="dist-value">20 ly</span>
     </div>
 
+    <div id="legend">
+      <div class="legend-item"><span style="color:#9bb0ff">●</span> O</div>
+      <div class="legend-item"><span style="color:#aabfff">●</span> B</div>
+      <div class="legend-item"><span style="color:#cad7ff">●</span> A</div>
+      <div class="legend-item"><span style="color:#f8f7ff">●</span> F</div>
+      <div class="legend-item"><span style="color:#fff4ea">●</span> G</div>
+      <div class="legend-item"><span style="color:#ffd2a1">●</span> K</div>
+      <div class="legend-item"><span style="color:#ff9966">●</span> M</div>
+    </div>
+
+    <div id="origin-info">
+      <div id="origin-name"></div>
+      <div id="origin-details"></div>
+    </div>
+
     <div id="controls-hint">
-      Drag · rotate &nbsp;|&nbsp; Scroll · zoom &nbsp;|&nbsp; Right-drag · pan
+      Drag · rotate &nbsp;|&nbsp; Scroll · zoom &nbsp;|&nbsp; Click · set origin
     </div>
 
     <div id="footer-link">
