@@ -30,6 +30,29 @@ def spectral_class(spect: str) -> str:
     return 'U'
 
 
+def clean_bf(bf: str) -> str:
+    """Clean a Bayer-Flamsteed designation into a readable label.
+
+    HYG encodes these as e.g. '52Tau Cet', '61    Cyg', 'Eps Ind'.
+    - If the string is ONLY a Flamsteed number + constellation (e.g. '52Tau Cet'),
+      strip the number: → 'Tau Cet'.
+    - If the Flamsteed number IS the identifier (e.g. '61    Cyg'), keep it: → '61 Cyg'.
+    - Always collapse internal whitespace.
+    """
+    import re
+    bf = bf.strip()
+    # Check if leading digits are followed by a Bayer letter-sequence (Greek abbrev)
+    # e.g. '52Tau Cet' — the 'Tau' is a Bayer letter, number is redundant
+    # vs '61    Cyg' — no Bayer letter follows, number is the Flamsteed ID
+    m = re.match(r'^(\d+)([A-Z][a-z]+\s)', bf)
+    if m:
+        # Has Bayer letter after the number — strip the number
+        bf = bf[len(m.group(1)):]
+    # Collapse multiple spaces
+    bf = re.sub(r'\s+', ' ', bf).strip()
+    return bf
+
+
 def process(input_path: str, output_path: str, max_ly: float) -> None:
     stars: list[dict] = []
     skipped = 0
@@ -65,7 +88,9 @@ def process(input_path: str, output_path: str, max_ly: float) -> None:
             hip = int(hip_raw) if hip_raw else None
 
             name = row.get('proper', '').strip() or None
-            bf = row.get('bf', '').strip() or None
+            bf_raw = row.get('bf', '').strip()
+            bf = clean_bf(bf_raw) if bf_raw else None
+            gl = row.get('gl', '').strip() or None
             spect_raw = row.get('spect', '').strip()
 
             stars.append({
@@ -73,6 +98,7 @@ def process(input_path: str, output_path: str, max_ly: float) -> None:
                 'hip': hip,
                 'name': name,
                 'bf': bf,
+                'gl': gl,
                 'x': x,
                 'y': y,
                 'z': z,
@@ -80,6 +106,23 @@ def process(input_path: str, output_path: str, max_ly: float) -> None:
                 'mag': mag,
                 'spect': spectral_class(spect_raw),
             })
+
+    # Sol is not in HYG (dist=0 is filtered as "unknown"). Inject it as a real
+    # record so downstream code treats the Sun like any other system, not a
+    # hardcoded corner case in the renderer.
+    stars.append({
+        'id': 0,
+        'hip': None,
+        'name': 'Sol',
+        'bf': None,
+        'gl': None,
+        'x': 0.0,
+        'y': 0.0,
+        'z': 0.0,
+        'dist_ly': 0.0,
+        'mag': -26.74,
+        'spect': 'G',
+    })
 
     # Sort by distance from Sol
     stars.sort(key=lambda s: s['dist_ly'])

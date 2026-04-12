@@ -12,8 +12,10 @@ export interface Star {
   hip: number | null
   /** Common / proper name, null if none */
   name: string | null
-  /** Bayer / Flamsteed designation */
+  /** Bayer / Flamsteed designation (cleaned, no leading Flamsteed number) */
   bf: string | null
+  /** Gliese / GJ catalogue designation */
+  gl: string | null
   /** Position in parsecs from Sol */
   x: number
   y: number
