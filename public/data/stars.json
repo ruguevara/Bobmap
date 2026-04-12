@@ -1,5 +1,18 @@
 [
   {
+    "id": 0,
+    "hip": null,
+    "name": "Sol",
+    "bf": null,
+    "gl": null,
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.0,
+    "dist_ly": 0.0,
+    "mag": -26.74,
+    "spect": "G"
+  },
+  {
     "id": 70666,
     "hip": 70890,
     "name": "Proxima Centauri",

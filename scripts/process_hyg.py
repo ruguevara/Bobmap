@@ -107,6 +107,23 @@ def process(input_path: str, output_path: str, max_ly: float) -> None:
                 'spect': spectral_class(spect_raw),
             })
 
+    # Sol is not in HYG (dist=0 is filtered as "unknown"). Inject it as a real
+    # record so downstream code treats the Sun like any other system, not a
+    # hardcoded corner case in the renderer.
+    stars.append({
+        'id': 0,
+        'hip': None,
+        'name': 'Sol',
+        'bf': None,
+        'gl': None,
+        'x': 0.0,
+        'y': 0.0,
+        'z': 0.0,
+        'dist_ly': 0.0,
+        'mag': -26.74,
+        'spect': 'G',
+    })
+
     # Sort by distance from Sol
     stars.sort(key=lambda s: s['dist_ly'])
 
