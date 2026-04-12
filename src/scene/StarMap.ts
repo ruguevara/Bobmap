@@ -50,12 +50,17 @@ export class StarMap {
   private staticOverlay: THREE.Group
   private unsubscribeOrigin: () => void
   private gridLayer: GridLayer
-  private projectionLayer!: ProjectionLayer
-  private labelLayer!: LabelLayer
+  private projectionLayer: ProjectionLayer | null = null
+  private labelLayer: LabelLayer | null = null
+  private stars: THREE.Points | null = null
+  private systemsInWorld: readonly StarSystem[] = []
+  private raycaster = new THREE.Raycaster()
+  private pointer = new THREE.Vector2()
+  private pointerDownPos = new THREE.Vector2()
 
   // TODO Phase 2: separate group for Bobiverse overlays
 
-  constructor(private container: HTMLElement, store: SystemStore) {
+  constructor(private container: HTMLElement, private store: SystemStore) {
     this.scene = new THREE.Scene()
     this.scene.background = new THREE.Color(0x000008)
 
@@ -93,7 +98,7 @@ export class StarMap {
 
     this.gridLayer = new GridLayer()
     this.gridLayer.build(this.staticOverlay)
-    this.buildWorld(store.all)
+    this.rebuildWorld(store.all)
     this.applyOrigin(store.origin)
 
     this.unsubscribeOrigin = store.onOriginChange(origin => this.applyOrigin(origin))
@@ -107,11 +112,20 @@ export class StarMap {
     this.unsubscribeOrigin()
     window.removeEventListener('resize', this.onResize)
     this.gridLayer.dispose()
-    this.projectionLayer.dispose()
-    this.labelLayer.dispose()
+    if (this.projectionLayer) this.projectionLayer.dispose()
+    if (this.labelLayer) this.labelLayer.dispose()
+    if (this.stars) {
+      this.worldGroup.remove(this.stars)
+      this.stars.geometry.dispose()
+      ;(this.stars.material as THREE.PointsMaterial).dispose()
+    }
     this.renderer.dispose()
     this.container.removeChild(this.renderer.domElement)
     this.container.removeChild(this.labelRenderer.domElement)
+  }
+
+  setVisibleSystems(systems: readonly StarSystem[]): void {
+    this.rebuildWorld(systems)
   }
 
   // ─── Private ─────────────────────────────────────────────────────────────
@@ -122,8 +136,20 @@ export class StarMap {
     this.worldGroup.position.set(-x, -y, -z)
   }
 
-  /** Build all per-system visuals in absolute galactic coords. */
-  private buildWorld(systems: readonly StarSystem[]): void {
+  /** Build (or rebuild) all per-system visuals in absolute galactic coords. */
+  private rebuildWorld(systems: readonly StarSystem[]): void {
+    // Dispose previous geometry if this is a rebuild
+    if (this.stars) {
+      this.worldGroup.remove(this.stars)
+      this.stars.geometry.dispose()
+      ;(this.stars.material as THREE.PointsMaterial).dispose()
+      this.stars = null
+    }
+    if (this.projectionLayer) { this.projectionLayer.dispose(); this.projectionLayer = null }
+    if (this.labelLayer) { this.labelLayer.dispose(); this.labelLayer = null }
+
+    this.systemsInWorld = systems
+
     const positions: number[] = []
     const colors: number[] = []
     const col = new THREE.Color()
@@ -137,7 +163,7 @@ export class StarMap {
     const geo = new THREE.BufferGeometry()
     geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
-    this.worldGroup.add(new THREE.Points(geo, new THREE.PointsMaterial({
+    this.stars = new THREE.Points(geo, new THREE.PointsMaterial({
       size: 0.4,
       vertexColors: true,
       sizeAttenuation: true,
@@ -145,7 +171,8 @@ export class StarMap {
       opacity: 1.0,
       map: StarMap.makeStarTexture(),
       alphaTest: 0.01,
-    })))
+    }))
+    this.worldGroup.add(this.stars)
 
     this.projectionLayer = new ProjectionLayer(systems)
     this.projectionLayer.build(this.worldGroup)
