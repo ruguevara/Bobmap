@@ -34,7 +34,7 @@ def to_galactic(hx: float, hy: float, hz: float) -> tuple[float, float, float]:
     yg =  0.494109 * hx - 0.444830 * hy + 0.746982 * hz
     zg = -0.867666 * hx - 0.198076 * hy + 0.455984 * hz
     # zg is galactic north; map it to Three.js Y
-    return xg, zg, yg
+    return xg, zg, yg  # swap: zg=galactic north → Three.js Y (gy)
 
 
 def spectral_class(spect: str) -> str:
