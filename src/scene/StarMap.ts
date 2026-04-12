@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import type { StarSystem } from '../types/system'
 import type { SystemStore } from '../data/SystemStore'
+import { GridLayer } from './layers/GridLayer'
 
 /** Harvard spectral class → approximate colour */
 const SPECTRAL_COLOR: Record<string, number> = {
@@ -46,6 +47,7 @@ export class StarMap {
   private worldGroup: THREE.Group
   private staticOverlay: THREE.Group
   private unsubscribeOrigin: () => void
+  private gridLayer: GridLayer
 
   // TODO Phase 2: separate group for Bobiverse overlays
 
@@ -85,7 +87,8 @@ export class StarMap {
     this.scene.add(this.worldGroup)
     this.scene.add(this.staticOverlay)
 
-    this.addGrid()
+    this.gridLayer = new GridLayer()
+    this.gridLayer.build(this.staticOverlay)
     this.buildWorld(store.all)
     this.applyOrigin(store.origin)
 
@@ -99,6 +102,7 @@ export class StarMap {
     if (this.animId !== null) cancelAnimationFrame(this.animId)
     this.unsubscribeOrigin()
     window.removeEventListener('resize', this.onResize)
+    this.gridLayer.dispose()
     this.renderer.dispose()
     this.container.removeChild(this.renderer.domElement)
     this.container.removeChild(this.labelRenderer.domElement)
@@ -203,26 +207,6 @@ export class StarMap {
     const obj = new CSS2DObject(div)
     obj.position.set(x, y, z)
     this.worldGroup.add(obj)
-  }
-
-  /** Faint reference grid on the galactic plane + ly rings around origin. */
-  private addGrid(): void {
-    const grid = new THREE.GridHelper(120, 30, 0x2a2a5a, 0x1a1a3a)
-    this.staticOverlay.add(grid)
-
-    for (const radiusLy of [10, 25, 50, 100]) {
-      const radiusPc = radiusLy / 3.26156
-      const circle = new THREE.LineLoop(
-        new THREE.BufferGeometry().setFromPoints(
-          Array.from({ length: 64 }, (_, i) => {
-            const a = (i / 64) * Math.PI * 2
-            return new THREE.Vector3(Math.cos(a) * radiusPc, 0, Math.sin(a) * radiusPc)
-          }),
-        ),
-        new THREE.LineBasicMaterial({ color: 0x2233aa, transparent: true, opacity: 0.7 }),
-      )
-      this.staticOverlay.add(circle)
-    }
   }
 
   /** Generate a soft circular disk texture for star points. */
