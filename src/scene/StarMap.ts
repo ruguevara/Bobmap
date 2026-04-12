@@ -146,10 +146,11 @@ export class StarMap {
 
   // ─── Private ─────────────────────────────────────────────────────────────
 
-  /** Translate the world group so that `origin` sits at (0,0,0). */
+  /** Translate the world group so that `origin` sits at (0,0,0) and update projection floor. */
   private applyOrigin(origin: StarSystem): void {
     const { x, y, z } = origin.galacticPos
     this.worldGroup.position.set(-x, -y, -z)
+    if (this.projectionLayer) this.projectionLayer.setOrigin(origin)
   }
 
   /** Build (or rebuild) all per-system visuals in absolute galactic coords. */
@@ -191,6 +192,7 @@ export class StarMap {
     this.worldGroup.add(this.stars)
 
     this.projectionLayer = new ProjectionLayer(systems)
+    this.projectionLayer.setOrigin(this.store.origin)
     this.projectionLayer.build(this.worldGroup)
 
     // Halo rings for multiple-component systems (billboarded sprites).
