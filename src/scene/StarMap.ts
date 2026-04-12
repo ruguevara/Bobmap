@@ -4,6 +4,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRe
 import type { StarSystem } from '../types/system'
 import type { SystemStore } from '../data/SystemStore'
 import { GridLayer } from './layers/GridLayer'
+import { ProjectionLayer } from './layers/ProjectionLayer'
 
 /** Harvard spectral class → approximate colour */
 const SPECTRAL_COLOR: Record<string, number> = {
@@ -48,6 +49,7 @@ export class StarMap {
   private staticOverlay: THREE.Group
   private unsubscribeOrigin: () => void
   private gridLayer: GridLayer
+  private projectionLayer!: ProjectionLayer
 
   // TODO Phase 2: separate group for Bobiverse overlays
 
@@ -103,6 +105,7 @@ export class StarMap {
     this.unsubscribeOrigin()
     window.removeEventListener('resize', this.onResize)
     this.gridLayer.dispose()
+    this.projectionLayer.dispose()
     this.renderer.dispose()
     this.container.removeChild(this.renderer.domElement)
     this.container.removeChild(this.labelRenderer.domElement)
@@ -141,21 +144,8 @@ export class StarMap {
       alphaTest: 0.01,
     })))
 
-    // Faint vertical lines projecting each system down to the reference plane.
-    const linePositions: number[] = []
-    for (const s of systems) {
-      const { x, y, z } = s.galacticPos
-      if (Math.abs(y) < 0.01) continue
-      linePositions.push(x, y, z)
-      linePositions.push(x, 0, z)
-    }
-    const projGeo = new THREE.BufferGeometry()
-    projGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3))
-    this.worldGroup.add(new THREE.LineSegments(projGeo, new THREE.LineBasicMaterial({
-      color: 0x4466aa,
-      transparent: true,
-      opacity: 0.7,
-    })))
+    this.projectionLayer = new ProjectionLayer(systems)
+    this.projectionLayer.build(this.worldGroup)
 
     // Halo rings for multiple-component systems (billboarded sprites).
     // Disabled — too noisy. Re-enable when view-settings panel is wired up.
