@@ -83,6 +83,25 @@
       }
 
       /* TODO: sidebar panel for filters — Phase 3 */
+
+      #filter-panel {
+        position: fixed;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        color: #889;
+        pointer-events: auto;
+        z-index: 10;
+      }
+      #dist-slider {
+        width: 120px;
+        accent-color: #4488cc;
+        cursor: pointer;
+      }
     </style>
   </head>
   <body>
@@ -94,6 +113,12 @@
         <div id="subtitle">Nearby stars · 100 ly radius</div>
       </div>
       <div id="status">Loading…</div>
+    </div>
+
+    <div id="filter-panel">
+      <label for="dist-slider">Radius</label>
+      <input type="range" id="dist-slider" min="5" max="20" value="20" step="1">
+      <span id="dist-value">20 ly</span>
     </div>
 
     <div id="controls-hint">

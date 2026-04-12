@@ -101,7 +101,6 @@ export class StarMap {
 
     this.gridLayer = new GridLayer()
     this.gridLayer.build(this.staticOverlay)
-    this.rebuildWorld(store.all)
     this.applyOrigin(store.origin)
 
     this.unsubscribeOrigin = store.onOriginChange(origin => {
