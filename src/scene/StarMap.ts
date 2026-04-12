@@ -59,6 +59,7 @@ export class StarMap {
   private raycaster = new THREE.Raycaster()
   private pointer = new THREE.Vector2()
   private pointerDownPos = new THREE.Vector2()
+  private starTexture: THREE.CanvasTexture | null = null
 
   // TODO Phase 2: separate group for Bobiverse overlays
 
@@ -103,6 +104,8 @@ export class StarMap {
     this.gridLayer.build(this.staticOverlay)
     this.applyOrigin(store.origin)
 
+    this.starTexture = StarMap.makeStarTexture()
+
     this.unsubscribeOrigin = store.onOriginChange(origin => {
       this.applyOrigin(origin)
       if (this.hoverLayer) this.hoverLayer.setHover(null, origin)
@@ -131,6 +134,7 @@ export class StarMap {
       this.stars.geometry.dispose()
       ;(this.stars.material as THREE.PointsMaterial).dispose()
     }
+    if (this.starTexture) { this.starTexture.dispose(); this.starTexture = null }
     this.renderer.dispose()
     this.container.removeChild(this.renderer.domElement)
     this.container.removeChild(this.labelRenderer.domElement)
@@ -181,7 +185,7 @@ export class StarMap {
       sizeAttenuation: true,
       transparent: true,
       opacity: 1.0,
-      map: StarMap.makeStarTexture(),
+      map: this.starTexture!,
       alphaTest: 0.01,
     }))
     this.worldGroup.add(this.stars)
