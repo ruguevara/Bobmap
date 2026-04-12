@@ -6,6 +6,7 @@ import type { SystemStore } from '../data/SystemStore'
 import { GridLayer } from './layers/GridLayer'
 import { ProjectionLayer } from './layers/ProjectionLayer'
 import { LabelLayer } from './layers/LabelLayer'
+import { HoverLayer } from './layers/HoverLayer'
 
 /** Harvard spectral class → approximate colour */
 const SPECTRAL_COLOR: Record<string, number> = {
@@ -52,6 +53,7 @@ export class StarMap {
   private gridLayer: GridLayer
   private projectionLayer: ProjectionLayer | null = null
   private labelLayer: LabelLayer | null = null
+  private hoverLayer: HoverLayer | null = null
   private stars: THREE.Points | null = null
   private systemsInWorld: readonly StarSystem[] = []
   private raycaster = new THREE.Raycaster()
@@ -102,11 +104,15 @@ export class StarMap {
     this.rebuildWorld(store.all)
     this.applyOrigin(store.origin)
 
-    this.unsubscribeOrigin = store.onOriginChange(origin => this.applyOrigin(origin))
+    this.unsubscribeOrigin = store.onOriginChange(origin => {
+      this.applyOrigin(origin)
+      if (this.hoverLayer) this.hoverLayer.setHover(null, origin)
+    })
 
     window.addEventListener('resize', this.onResize)
     this.renderer.domElement.addEventListener('pointerdown', this.onPointerDown)
     this.renderer.domElement.addEventListener('click', this.onClick)
+    this.renderer.domElement.addEventListener('mousemove', this.onMouseMove)
     this.animate()
   }
 
@@ -116,9 +122,11 @@ export class StarMap {
     window.removeEventListener('resize', this.onResize)
     this.renderer.domElement.removeEventListener('pointerdown', this.onPointerDown)
     this.renderer.domElement.removeEventListener('click', this.onClick)
+    this.renderer.domElement.removeEventListener('mousemove', this.onMouseMove)
     this.gridLayer.dispose()
     if (this.projectionLayer) this.projectionLayer.dispose()
     if (this.labelLayer) this.labelLayer.dispose()
+    if (this.hoverLayer) this.hoverLayer.dispose()
     if (this.stars) {
       this.worldGroup.remove(this.stars)
       this.stars.geometry.dispose()
@@ -203,6 +211,11 @@ export class StarMap {
     this.labelLayer = new LabelLayer(systems)
     this.labelLayer.build(this.worldGroup)
 
+    if (!this.hoverLayer) {
+      this.hoverLayer = new HoverLayer()
+      this.hoverLayer.build(this.worldGroup)
+    }
+
     // TODO Phase 3: rebuild world when filters change
   }
 
@@ -245,6 +258,22 @@ export class StarMap {
     ctx.arc(cx, cy, size * 0.42, 0, Math.PI * 2)
     ctx.stroke()
     return new THREE.CanvasTexture(canvas)
+  }
+
+  private onMouseMove = (e: MouseEvent): void => {
+    const rect = this.renderer.domElement.getBoundingClientRect()
+    this.pointer.set(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1,
+    )
+    this.raycaster.setFromCamera(this.pointer, this.camera)
+    if (!this.stars || !this.hoverLayer) return
+    const hits = this.raycaster.intersectObject(this.stars)
+    const sys =
+      hits.length > 0 && hits[0].index !== undefined && hits[0].index < this.systemsInWorld.length
+        ? this.systemsInWorld[hits[0].index]
+        : null
+    this.hoverLayer.setHover(sys ?? null, this.store.origin)
   }
 
   private onPointerDown = (e: PointerEvent): void => {
